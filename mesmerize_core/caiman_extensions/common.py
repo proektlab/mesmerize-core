@@ -1,6 +1,7 @@
 import os
 import shutil
 from pathlib import Path
+import psutil
 from subprocess import Popen
 from typing import *
 from uuid import UUID, uuid4
@@ -460,14 +461,41 @@ class CaimanSeriesExtensions:
     def _run_slurm(
         self,
         runfile_path: str,
+        wait: bool,
+        partition: Optional[Union[str, list[str]]] = None,
         **kwargs
     ):
-        raise NotImplementedError("Not yet implemented, just a placeholder")
-        # submission_command = (
-        #     f'sbatch --ntasks=1 --cpus-per-task=16 --mem=90000 --wrap="{runfile_path}"'
-        # )
-        #
-        # Popen(submission_command.split(" "))
+        """
+        Run on a cluster using SLURM. Configurable options (to pass to run):
+        - partition: if given, tells SLRUM to run the job on the given partition(s).
+        """
+
+        # this needs to match what's in the runfile
+        if 'MESMERIZE_N_PROCESSES' in os.environ:
+            n_procs = os.environ['MESMERIZE_N_PROCESSES']
+        else:
+            n_procs = psutil.cpu_count() - 1
+
+        # make sure we have a place to save log files
+        uuid = str(self._series["uuid"])
+        output_dir = Path(runfile_path).parent.joinpath(uuid)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f'{uuid}.log'
+
+        # --wait means that the lifetme of the created process corresponds to the lifetime of the job
+        submission_opts = (f'--job-name={self._series["algo"]}-{uuid[:8]} --ntasks=1 ' +
+            f'--cpus-per-task={n_procs} --output={output_path} --wait')
+        
+        if partition is not None:
+            if isinstance(partition, str):
+                partition = [partition]
+            submission_opts += f' --partition={",".join(partition)}'
+
+        self.process = Popen(['sbatch', *submission_opts.split(" "), runfile_path])
+        if wait:
+            self.process.wait()
+        
+        return self.process
 
     @cnmf_cache.invalidate()
     def run(
