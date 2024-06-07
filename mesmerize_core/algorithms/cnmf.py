@@ -3,6 +3,7 @@ import click
 import caiman as cm
 from caiman.source_extraction.cnmf import cnmf as cnmf
 from caiman.source_extraction.cnmf.params import CNMFParams
+from caiman.paths import decode_mmap_filename_dict
 import psutil
 import numpy as np
 import pandas as pd
@@ -60,13 +61,21 @@ def run_algo(batch_path, uuid, data_path: str = None):
     cnmf_params = CNMFParams(params_dict=params["main"])
     # Run CNMF, denote boolean 'success' if CNMF completes w/out error
     try:
-        fname_new = cm.save_memmap(
-            [input_movie_path], base_name=f"{uuid}_cnmf-memmap_", order="C", dview=dview
-        )
+        # only re-save memmap if necessary
+        save_new_mmap = True
+        if Path(input_movie_path).suffix == ".mmap":
+            mmap_info = decode_mmap_filename_dict(input_movie_path)
+            save_new_mmap = "order" not in mmap_info or mmap_info["order"] != "C"
 
-        print("making memmap")
+        if save_new_mmap:
+            print("making memmap")
+            fname_new = cm.save_memmap(
+                [input_movie_path], base_name=f"{uuid}_cnmf-memmap_", order="C", dview=dview
+            )
+            Yr, dims, T = cm.load_memmap(fname_new)
+        else:
+            Yr, dims, T = cm.load_memmap(input_movie_path)
 
-        Yr, dims, T = cm.load_memmap(fname_new)
         images = np.reshape(Yr.T, [T] + list(dims), order="F")
 
         proj_paths = dict()
@@ -77,11 +86,11 @@ def run_algo(batch_path, uuid, data_path: str = None):
             )
             np.save(str(proj_paths[proj_type]), p_img)
 
-        # in fname new load in memmap order C
-        cm.stop_server(dview=dview)
-        c, dview, n_processes = cm.cluster.setup_cluster(
-            backend="local", n_processes=None, single_thread=False
-        )
+        # # in fname new load in memmap order C
+        # cm.stop_server(dview=dview)
+        # c, dview, n_processes = cm.cluster.setup_cluster(
+        #     backend="local", n_processes=None, single_thread=False
+        # )
 
         print("performing CNMF")
         cnm = cnmf.CNMF(n_processes, params=cnmf_params, dview=dview)
@@ -110,10 +119,14 @@ def run_algo(batch_path, uuid, data_path: str = None):
         # output dict for dataframe row (pd.Series)
         d = dict()
 
-        cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
         if IS_WINDOWS:
             Yr._mmap.close()  # accessing private attr but windows is annoying otherwise
-        move_file(fname_new, cnmf_memmap_path)
+
+        if save_new_mmap:
+            cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
+            move_file(fname_new, cnmf_memmap_path)
+        else:
+            cnmf_memmap_path = Path(input_movie_path)
 
         cnmf_hdf5_path = output_path.relative_to(output_dir.parent)
         cnmf_memmap_path = cnmf_memmap_path.relative_to(output_dir.parent)
