@@ -6,7 +6,6 @@ from typing import Union
 from filelock import SoftFileLock, Timeout
 import pandas as pd
 
-from .caiman_extensions.common import OverwriteError
 from .utils import validate_path
 
 CURRENT_BATCH_PATH: Path = None  # only one batch at a time
@@ -249,15 +248,29 @@ def get_full_raw_data_path(path: Union[Path, str]) -> Path:
 
     return path
 
-class BatchLock(SoftFileLock):
-    """Locks a batch file for safe writing, returning the dataframe in the 'as' clause"""
+
+class OverwriteError(IndexError):
+    """
+    Error thrown when trying to write to an existing batch file, but there is a risk
+    of overwriting existing data.
+    Note this is a subclass of IndexError to avoid a breaking change, because
+    IndexError was previously thrown from df.caiman.save_to_disk.
+    """
+    pass
+
+
+class BatchLock:
+    """Locks a batch file for safe writing, returning the dataframe in the target"""
     def __init__(self, batch_path: Union[Path, str], *args, **kwargs):
-        super().__init__(batch_path + ".lock", *args, **kwargs)
+        self.lock = SoftFileLock(str(batch_path) + ".lock", *args, **kwargs)
         self.batch_path = batch_path
     
     def __enter__(self) -> pd.DataFrame:
-        super().__enter__()   # may throw Timeout
+        self.lock.__enter__()   # may throw Timeout
         return load_batch(self.batch_path)
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.lock.__exit__(exc_type, exc_value, traceback)
 
 
 def open_batch_for_safe_writing(batch_path: Union[Path, str], lock_timeout: float = 30) -> BatchLock:
