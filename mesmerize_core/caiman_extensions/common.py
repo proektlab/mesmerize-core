@@ -472,7 +472,7 @@ class CaimanSeriesExtensions:
 
     def __init__(self, s: pd.Series):
         self._series = s
-        self.process: Popen = None
+        self.process: Optional[Popen] = None
 
     def _run_local(
             self,
@@ -649,7 +649,7 @@ class CaimanSeriesExtensions:
 
         return self._series.paths.resolve(self._series["input_movie_path"])
 
-    def get_input_movie(self, reader: callable = None, **kwargs) -> Union[np.ndarray, Any]:
+    def get_input_movie(self, reader: Optional[Callable] = None, **kwargs) -> Union[np.ndarray, Any]:
         """
         Get the input movie
 

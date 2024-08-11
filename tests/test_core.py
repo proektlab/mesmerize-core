@@ -98,7 +98,7 @@ def download_data(fname: str):
         "mcorr": "https://caiman.flatironinstitute.org/~neuro/caiman_downloadables/demoMovie.tif",
         "cnmf": None,
         "cnmfe": "https://caiman.flatironinstitute.org/~neuro/caiman_downloadables/data_endoscope.tif",
-    }.get(fname)
+    }[fname]
 
     print(f"Downloading test data from: {url}")
 
