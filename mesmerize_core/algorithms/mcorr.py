@@ -77,42 +77,31 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None):
                 )
                 np.save(str(proj_paths[proj_type]), p_img)
 
-            def run_correlation(remove_baseline=True) -> Path:
-                Cns = local_correlations_movie_offline(
-                    str(mcorr_memmap_path),
-                    remove_baseline=remove_baseline,
-                    window=1000,
-                    stride=1000,
-                    winSize_baseline=100,
-                    quantil_min_baseline=10,
-                    dview=dview,
-                )
-                Cn = Cns.max(axis=0)
-                Cn[np.isnan(Cn)] = 0
-                cn_path = output_dir.joinpath(f"{uuid}_cn.npy")
-                np.save(str(cn_path), Cn, allow_pickle=False)
-                
-                print("finished computing correlation image")
-                return cn_path
+            print("Computing correlation image")
+            Cns = local_correlations_movie_offline(
+                str(mcorr_memmap_path),
+                remove_baseline=True,
+                window=1000,
+                stride=1000,
+                winSize_baseline=100,
+                quantil_min_baseline=10,
+                dview=dview,
+            )
+            Cn = Cns.max(axis=0)
+            Cn[np.isnan(Cn)] = 0
+            cn_path = output_dir.joinpath(f"{uuid}_cn.npy")
+            np.save(str(cn_path), Cn, allow_pickle=False)
+            
+            print("finished computing correlation image")
 
-            try:
-                print("Computing correlation image")
-                cn_path = run_correlation()
-
-            except ValueError as err:
-                # Test for error that occurs in movie.removeBL before bug was fixed
-                is3D = len(dims) == 3
-                if is3D and len(err.args) == 1 and err.args[0] == "axes don't match array":
-                    print("Computing correlation on 3D image failed - trying without baseline (use caiman >= 1.11.2 to fix)")
-                    cn_path = run_correlation(remove_baseline=False)
-                else:
-                    raise
 
             # Compute shifts
             if opts.motion["pw_rigid"] == True:
                 x_shifts = mc.x_shifts_els
                 y_shifts = mc.y_shifts_els
                 shifts = [x_shifts, y_shifts]
+                if hasattr(mc, 'z_shifts_els'):
+                    shifts += mc.z_shifts_els
                 shift_path = output_dir.joinpath(f"{uuid}_shifts.npy")
                 np.save(str(shift_path), shifts)
             else:
@@ -124,15 +113,14 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None):
             d = dict()
 
             # save paths as relative path strings with forward slashes
-            if cn_path is not None:
-                cn_path = str(PurePosixPath(cn_path.relative_to(output_dir.parent)))
+            cn_path = str(PurePosixPath(cn_path.relative_to(output_dir.parent)))
             mcorr_memmap_path = str(PurePosixPath(mcorr_memmap_path.relative_to(output_dir.parent)))
             shift_path = str(PurePosixPath(shift_path.relative_to(output_dir.parent)))
             for proj_type in proj_paths.keys():
                 d[f"{proj_type}-projection-path"] = str(PurePosixPath(proj_paths[proj_type].relative_to(
                     output_dir.parent
                 )))
-
+            
             d.update(
                 {
                     "mcorr-output-path": mcorr_memmap_path,
