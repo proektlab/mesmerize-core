@@ -333,7 +333,10 @@ class CaimanDataFrameExtensions:
             """
             params = {}
             for key1, val1 in params_dict.items():
-                if isinstance(val1, dict):  # nested
+                if key1 == "main":
+                    # recursively step into "main" params
+                    params.update(flatten_params(val1))
+                elif isinstance(val1, dict):  # nested
                     for key2, val2 in val1.items():
                         params[f"{key1}.{key2}"] = val2
                 else:
@@ -347,7 +350,7 @@ class CaimanDataFrameExtensions:
             raise NameError(f"The given `item_name`: {item_name}, does not exist in the DataFrame")
 
         # get flattened parameters for each of the filtered items
-        params_flat = sub_df.params.map(lambda p: flatten_params(p["main"]))
+        params_flat = sub_df.params.map(flatten_params)
 
         # build list of params that differ between different parameter sets
         common_params = deepcopy(params_flat.iat[0])  # holds the common value for parameters found in all sets (so far)
