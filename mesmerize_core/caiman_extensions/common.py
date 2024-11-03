@@ -11,6 +11,7 @@ import time
 from copy import deepcopy
 import shlex
 from concurrent.futures import ThreadPoolExecutor, Future
+import logging
 
 import numpy as np
 import pandas as pd
@@ -469,14 +470,16 @@ class CaimanSeriesExtensions:
             batch_path: Path,
             uuid: UUID,
             data_path: Union[Path, None],
-            dview=None
+            dview=None,
+            log_level=None
     ) -> DummyProcess:
         algo_module = getattr(algorithms, algo)
         algo_module.run_algo(
             batch_path=str(batch_path),
             uuid=str(uuid),
             data_path=str(data_path),
-            dview=dview
+            dview=dview,
+            log_level=log_level
         )
         return DummyProcess()
 
@@ -486,7 +489,8 @@ class CaimanSeriesExtensions:
             batch_path: Path,
             uuid: UUID,
             data_path: Union[Path, None],
-            dview=None
+            dview=None,
+            log_level=None
     ) -> WaitableFuture:
         algo_module = getattr(algorithms, algo)
         with ThreadPoolExecutor(max_workers=1) as executor:
@@ -495,7 +499,8 @@ class CaimanSeriesExtensions:
                 batch_path=str(batch_path),
                 uuid=str(uuid),
                 data_path=str(data_path),
-                dview=dview
+                dview=dview,
+                log_level=log_level
                 )
             return WaitableFuture(future)
 
@@ -608,7 +613,8 @@ class CaimanSeriesExtensions:
                 batch_path=batch_path,
                 uuid=self._series["uuid"],
                 data_path=get_parent_raw_data_path(),
-                dview=kwargs.get("dview")
+                dview=kwargs.get("dview"),
+                log_level=kwargs.get("log_level")
             )
         else:
             # Create the runfile in the batch dir using this Series' UUID as the filename
@@ -623,6 +629,15 @@ class CaimanSeriesExtensions:
             args_str = f"--batch-path {batch_path} --uuid {self._series.uuid}"
             if get_parent_raw_data_path() is not None:
                 args_str += f" --data-path {get_parent_raw_data_path()}"
+
+            # set log level
+            if 'log_level' in kwargs:
+                level = kwargs['log_level']
+                if isinstance(level, str):
+                    level = getattr(logging, level)
+            else:
+                level = logging.getLogger().getEffectiveLevel()
+            args_str += f" --log-level {level}"
 
             # make the runfile
             runfile_path = make_runfile(
