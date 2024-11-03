@@ -117,7 +117,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None):
 
             # save paths as relative path strings with forward slashes
             cnmf_hdf5_path = str(PurePosixPath(output_path.relative_to(output_dir.parent)))
-            cnmf_memmap_path = str(PurePosixPath(cnmf_memmap_path.relative_to(output_dir.parent)))
+            cnmf_memmap_path = str(PurePosixPath(df.paths.split(cnmf_memmap_path)[1]))  # still work if outside output dir
             corr_img_path = str(PurePosixPath(corr_img_path.relative_to(output_dir.parent)))
             for proj_type in proj_paths.keys():
                 d[f"{proj_type}-projection-path"] = str(PurePosixPath(proj_paths[proj_type].relative_to(
