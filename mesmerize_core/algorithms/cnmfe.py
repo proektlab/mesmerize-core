@@ -11,7 +11,11 @@ import time
 if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     from mesmerize_core import set_parent_raw_data_path, load_batch
     from mesmerize_core.utils import IS_WINDOWS
-    from mesmerize_core.algorithms._utils import ensure_server, save_projections_parallel, setup_logging
+    from mesmerize_core.algorithms._utils import (
+        ensure_server,
+        save_projections_parallel,
+        setup_logging,
+    )
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
     from ..utils import IS_WINDOWS
@@ -40,7 +44,10 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
     with ensure_server(dview) as (dview, n_processes):
         try:
             fname_new = cm.save_memmap(
-                [input_movie_path], base_name=f"{uuid}_cnmf-memmap_", order="C", dview=dview
+                [input_movie_path],
+                base_name=f"{uuid}_cnmf-memmap_",
+                order="C",
+                dview=dview,
             )
 
             print("making memmap")
@@ -92,7 +99,9 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             move_file(fname_new, cnmf_memmap_path)
 
             # save path as relative path strings with forward slashes
-            cnmfe_memmap_path = str(PurePosixPath(cnmf_memmap_path.relative_to(output_dir.parent)))
+            cnmfe_memmap_path = str(
+                PurePosixPath(cnmf_memmap_path.relative_to(output_dir.parent))
+            )
 
             d.update(
                 {

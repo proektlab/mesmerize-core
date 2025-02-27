@@ -17,7 +17,12 @@ import numpy as np
 import pandas as pd
 from filelock import SoftFileLock, Timeout
 
-from ._batch_exceptions import BatchItemNotRunError, BatchItemUnsuccessfulError, DependencyError, PreventOverwriteError
+from ._batch_exceptions import (
+    BatchItemNotRunError,
+    BatchItemUnsuccessfulError,
+    DependencyError,
+    PreventOverwriteError,
+)
 from ._utils import validate, _index_parser, _verify_and_lock_batch_file
 from ..batch_utils import (
     COMPUTE_BACKENDS,
@@ -27,7 +32,13 @@ from ..batch_utils import (
     get_parent_raw_data_path,
     load_batch,
 )
-from ..utils import validate_path, IS_WINDOWS, make_runfile, warning_experimental, get_params_diffs
+from ..utils import (
+    validate_path,
+    IS_WINDOWS,
+    make_runfile,
+    warning_experimental,
+    get_params_diffs,
+)
 from .cnmf import cnmf_cache
 from .. import algorithms
 from ..movie_readers import default_reader
@@ -48,8 +59,9 @@ class CaimanDataFrameExtensions:
 
     def __init__(self, df: pd.DataFrame):
         self._df = df
-        self._batch_lock = SoftFileLock(str(df.paths.get_batch_path()) + ".lock",
-                                        timeout=30, is_singleton=True)
+        self._batch_lock = SoftFileLock(
+            str(df.paths.get_batch_path()) + ".lock", timeout=30, is_singleton=True
+        )
 
     def uloc(self, u: Union[str, UUID]) -> pd.Series:
         """
@@ -68,7 +80,13 @@ class CaimanDataFrameExtensions:
         return df_u.squeeze()
 
     @_verify_and_lock_batch_file
-    def add_item(self, algo: str, item_name: str, input_movie_path: Union[str, pd.Series], params: dict):
+    def add_item(
+        self,
+        algo: str,
+        item_name: str,
+        input_movie_path: Union[str, pd.Series],
+        params: dict,
+    ):
         """
         Add an item to the DataFrame to organize parameters
         that can be used to run a CaImAn algorithm
@@ -135,7 +153,9 @@ class CaimanDataFrameExtensions:
 
     @_verify_and_lock_batch_file
     @_index_parser
-    def update_item(self, index: Union[int, str, UUID], updates: Union[dict, pd.Series]):
+    def update_item(
+        self, index: Union[int, str, UUID], updates: Union[dict, pd.Series]
+    ):
         """
         Update the item at the given index or UUID with the data in updates and write to disk.
 
@@ -151,17 +171,21 @@ class CaimanDataFrameExtensions:
         row = self._df.iloc[index]
         for key in updates.keys():
             if key not in row:
-                raise AttributeError(f"Cannot update item; received unknown column name '{key}'")
+                raise AttributeError(
+                    f"Cannot update item; received unknown column name '{key}'"
+                )
         row.update(updates)
         self._df.iloc[index] = row
         self.save_to_disk()
 
-    def update_item_with_results(self, uuid: Union[str, UUID], results: dict, run_duration: float):
+    def update_item_with_results(
+        self, uuid: Union[str, UUID], results: dict, run_duration: float
+    ):
         """Helper for algorithms to save their results to disk"""
         updates = {
             "outputs": results,
             "ran_time": datetime.now().isoformat(timespec="seconds", sep="T"),
-            "algo_duration": str(run_duration) + " sec"
+            "algo_duration": str(run_duration) + " sec",
         }
         try:
             # reload first because it should be safe since we have a UUID and we want to
@@ -238,7 +262,12 @@ class CaimanDataFrameExtensions:
 
     @_verify_and_lock_batch_file
     @_index_parser
-    def remove_item(self, index: Union[int, str, UUID], remove_data: bool = True, safe_removal: bool = True):
+    def remove_item(
+        self,
+        index: Union[int, str, UUID],
+        remove_data: bool = True,
+        safe_removal: bool = True,
+    ):
         """
         Remove a batch item from the DataFrame and delete all data associated
         to that batch item from disk if ``remove_data=True``
@@ -325,12 +354,14 @@ class CaimanDataFrameExtensions:
             `item_name`. The returned index corresponds to the
             index of the original DataFrame
 
-        """            
+        """
         sub_df = self._df[self._df["item_name"] == item_name]
         sub_df = sub_df[sub_df["algo"] == algo]
 
         if sub_df.index.size == 0:
-            raise NameError(f"The given `item_name`: {item_name}, does not exist in the DataFrame")
+            raise NameError(
+                f"The given `item_name`: {item_name}, does not exist in the DataFrame"
+            )
 
         params_list = sub_df.params.tolist()
         diffs = get_params_diffs(params_list)
@@ -340,9 +371,11 @@ class CaimanDataFrameExtensions:
 
         return diffs_df
 
-    @warning_experimental("This feature will change in the future and directly return the "
-                          " a DataFrame of children (rows, ie. child batch items row) "
-                          "instead of a list of UUIDs")
+    @warning_experimental(
+        "This feature will change in the future and directly return the "
+        " a DataFrame of children (rows, ie. child batch items row) "
+        "instead of a list of UUIDs"
+    )
     @_index_parser
     def get_children(self, index: Union[int, str, UUID]) -> List[UUID]:
         """
@@ -384,8 +417,10 @@ class CaimanDataFrameExtensions:
                 children.append(r["uuid"])
         return children
 
-    @warning_experimental("This feature will change in the future and directly return the "
-                          " pandas.Series (row, ie. batch item row) instead of the UUID")
+    @warning_experimental(
+        "This feature will change in the future and directly return the "
+        " pandas.Series (row, ie. batch item row) instead of the UUID"
+    )
     @_index_parser
     def get_parent(self, index: Union[int, str, UUID]) -> Union[UUID, None]:
         """
@@ -416,7 +451,11 @@ class CaimanDataFrameExtensions:
                 continue
             try:
                 _potential_parent = r.mcorr.get_output_path()
-            except (FileNotFoundError, BatchItemUnsuccessfulError, BatchItemNotRunError):
+            except (
+                FileNotFoundError,
+                BatchItemUnsuccessfulError,
+                BatchItemNotRunError,
+            ):
                 continue  # can't be a parent if it was unsuccessful
 
             if _potential_parent == input_movie_path:
@@ -425,29 +464,33 @@ class CaimanDataFrameExtensions:
 
 class Waitable(Protocol):
     """An object that we can call "wait" on"""
+
     def wait(self) -> None: ...
 
 
 class DummyProcess(Waitable):
     """Dummy process for local backend"""
+
     def wait(self) -> None:
         pass
 
 
 class WaitableFuture(Waitable):
     """Adaptor for future returned from Executor.submit"""
+
     def __init__(self, future: Future[None]):
         self.future = future
-    
+
     def wait(self) -> None:
         return self.future.result()
-    
+
 
 class CheckedSubprocess(Waitable):
     """Adaptor for Popen that just raises an exception if the return code is nonzero"""
+
     def __init__(self, popen: Popen):
         self.popen = popen
-    
+
     def wait(self) -> None:
         rc = self.popen.wait()
         if rc != 0:
@@ -465,13 +508,13 @@ class CaimanSeriesExtensions:
         self.process: Optional[Waitable] = None
 
     def _run_local(
-            self,
-            algo: str,
-            batch_path: Path,
-            uuid: UUID,
-            data_path: Union[Path, None],
-            dview=None,
-            log_level=None
+        self,
+        algo: str,
+        batch_path: Path,
+        uuid: UUID,
+        data_path: Union[Path, None],
+        dview=None,
+        log_level=None,
     ) -> DummyProcess:
         algo_module = getattr(algorithms, algo)
         algo_module.run_algo(
@@ -479,18 +522,18 @@ class CaimanSeriesExtensions:
             uuid=str(uuid),
             data_path=str(data_path),
             dview=dview,
-            log_level=log_level
+            log_level=log_level,
         )
         return DummyProcess()
 
     def _run_local_async(
-            self,
-            algo: str,
-            batch_path: Path,
-            uuid: UUID,
-            data_path: Union[Path, None],
-            dview=None,
-            log_level=None
+        self,
+        algo: str,
+        batch_path: Path,
+        uuid: UUID,
+        data_path: Union[Path, None],
+        dview=None,
+        log_level=None,
     ) -> WaitableFuture:
         algo_module = getattr(algorithms, algo)
         with ThreadPoolExecutor(max_workers=1) as executor:
@@ -500,15 +543,11 @@ class CaimanSeriesExtensions:
                 uuid=str(uuid),
                 data_path=str(data_path),
                 dview=dview,
-                log_level=log_level
-                )
+                log_level=log_level,
+            )
             return WaitableFuture(future)
 
-    def _run_subprocess(
-        self,
-        runfile_path: str,
-        **kwargs
-    ) -> CheckedSubprocess:
+    def _run_subprocess(self, runfile_path: str, **kwargs) -> CheckedSubprocess:
 
         # Get the dir that contains the input movie
         parent_path = self._series.paths.resolve(self._series.input_movie_path).parent
@@ -519,12 +558,8 @@ class CaimanSeriesExtensions:
 
         return CheckedSubprocess(popen)  # so that it throws an exception on failure
 
-
     def _run_slurm(
-        self,
-        runfile_path: str,
-        sbatch_opts: str = '',
-        **kwargs
+        self, runfile_path: str, sbatch_opts: str = "", **kwargs
     ) -> CheckedSubprocess:
         """
         Run on a cluster using SLURM. Configurable options (to pass to run):
@@ -538,8 +573,8 @@ class CaimanSeriesExtensions:
         """
 
         # this needs to match what's in the runfile
-        if 'MESMERIZE_N_PROCESSES' in os.environ:
-            n_procs = os.environ['MESMERIZE_N_PROCESSES']
+        if "MESMERIZE_N_PROCESSES" in os.environ:
+            n_procs = os.environ["MESMERIZE_N_PROCESSES"]
         else:
             n_procs = psutil.cpu_count() - 1
 
@@ -547,26 +582,22 @@ class CaimanSeriesExtensions:
         uuid = str(self._series["uuid"])
         output_dir = Path(runfile_path).parent.joinpath(uuid)
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f'{uuid}.log'
+        output_path = output_dir / f"{uuid}.log"
 
         # --wait means that the lifetme of the created process corresponds to the lifetime of the job
         submission_opts = [
             f'--job-name={self._series["algo"]}-{uuid[:8]}',
-            '--ntasks=1',
-            f'--cpus-per-task={n_procs}',
-            f'--output={output_path}',
-            '--wait'
-            ] + shlex.split(sbatch_opts)
-        
-        return CheckedSubprocess(Popen(['sbatch', *submission_opts, runfile_path]))
+            "--ntasks=1",
+            f"--cpus-per-task={n_procs}",
+            f"--output={output_path}",
+            "--wait",
+        ] + shlex.split(sbatch_opts)
 
+        return CheckedSubprocess(Popen(["sbatch", *submission_opts, runfile_path]))
 
     @cnmf_cache.invalidate()
     def run(
-            self,
-            backend: Optional[str] = None,
-            wait: bool = True,
-            **kwargs
+        self, backend: Optional[str] = None, wait: bool = True, **kwargs
     ) -> Waitable:
         """
         Run a CaImAn algorithm in an external process using the chosen backend
@@ -614,7 +645,7 @@ class CaimanSeriesExtensions:
                 uuid=self._series["uuid"],
                 data_path=get_parent_raw_data_path(),
                 dview=kwargs.get("dview"),
-                log_level=kwargs.get("log_level")
+                log_level=kwargs.get("log_level"),
             )
         else:
             # Create the runfile in the batch dir using this Series' UUID as the filename
@@ -631,8 +662,8 @@ class CaimanSeriesExtensions:
                 args_str += f" --data-path {get_parent_raw_data_path()}"
 
             # set log level
-            if 'log_level' in kwargs:
-                level = kwargs['log_level']
+            if "log_level" in kwargs:
+                level = kwargs["log_level"]
                 if isinstance(level, str):
                     level = getattr(logging, level)
             else:
@@ -648,14 +679,12 @@ class CaimanSeriesExtensions:
                 args_str=args_str,
             )
             try:
-                self.process = getattr(self, f"_run_{backend}")(
-                    runfile_path, **kwargs
-                )
+                self.process = getattr(self, f"_run_{backend}")(runfile_path, **kwargs)
             except:
                 with open(runfile_path, "r") as f:
                     raise ValueError(f.read())
 
-        assert self.process is not None, 'Process should have been created'
+        assert self.process is not None, "Process should have been created"
         if wait:
             self.process.wait()
         return self.process
@@ -670,7 +699,9 @@ class CaimanSeriesExtensions:
 
         return self._series.paths.resolve(self._series["input_movie_path"])
 
-    def get_input_movie(self, reader: Optional[Callable] = None, **kwargs) -> Union[np.ndarray, Any]:
+    def get_input_movie(
+        self, reader: Optional[Callable] = None, **kwargs
+    ) -> Union[np.ndarray, Any]:
         """
         Get the input movie
 
@@ -690,9 +721,7 @@ class CaimanSeriesExtensions:
 
         if reader is not None:
             if not callable(reader):
-                raise TypeError(
-                    f"reader must be a callable type, such as a function"
-                )
+                raise TypeError(f"reader must be a callable type, such as a function")
 
             return reader(path_str, **kwargs)
 
@@ -724,7 +753,7 @@ class CaimanSeriesExtensions:
     def get_projection(self, proj_type: str) -> np.ndarray:
         """
         Return the ``max``, ``mean``, or ``std`` (standard deviation) projection
-        
+
         Parameters
         ----------
         proj_type: str
