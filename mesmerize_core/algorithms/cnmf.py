@@ -1,4 +1,5 @@
 """Performs CNMF in a separate process"""
+
 import click
 import caiman as cm
 from caiman.source_extraction.cnmf import cnmf as cnmf
@@ -15,7 +16,11 @@ import time
 if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     from mesmerize_core import set_parent_raw_data_path, load_batch
     from mesmerize_core.utils import IS_WINDOWS
-    from mesmerize_core.algorithms._utils import ensure_server, save_projections_parallel, setup_logging
+    from mesmerize_core.algorithms._utils import (
+        ensure_server,
+        save_projections_parallel,
+        setup_logging,
+    )
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
     from ..utils import IS_WINDOWS
@@ -59,7 +64,10 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             if save_new_mmap:
                 print("making memmap")
                 fname_new = cm.save_memmap(
-                    [input_movie_path], base_name=f"{uuid}_cnmf-memmap_", order="C", dview=dview
+                    [input_movie_path],
+                    base_name=f"{uuid}_cnmf-memmap_",
+                    order="C",
+                    dview=dview,
                 )
                 cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
                 move_file(fname_new, cnmf_memmap_path)
@@ -71,7 +79,10 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
 
             print("computing projections")
             proj_paths = save_projections_parallel(
-                uuid=uuid, movie_path=cnmf_memmap_path, output_dir=output_dir, dview=dview
+                uuid=uuid,
+                movie_path=cnmf_memmap_path,
+                output_dir=output_dir,
+                dview=dview,
             )
 
             print("computing correlation image")
@@ -96,8 +107,10 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             # )
 
             # load Ain if given
-            if 'Ain_path' in params and params['Ain_path'] is not None:
-                Ain_path_abs = output_dir / params['Ain_path']  # resolve relative to output dir
+            if "Ain_path" in params and params["Ain_path"] is not None:
+                Ain_path_abs = (
+                    output_dir / params["Ain_path"]
+                )  # resolve relative to output dir
                 Ain = np.load(Ain_path_abs, allow_pickle=True)
                 if Ain.size == 1:  # sparse array loaded as object
                     Ain = Ain.item()
@@ -129,13 +142,19 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                 Yr._mmap.close()  # accessing private attr but windows is annoying otherwise
 
             # save paths as relative path strings with forward slashes
-            cnmf_hdf5_path = str(PurePosixPath(output_path.relative_to(output_dir.parent)))
-            cnmf_memmap_path = str(PurePosixPath(df.paths.split(cnmf_memmap_path)[1]))  # still work if outside output dir
-            corr_img_path = str(PurePosixPath(corr_img_path.relative_to(output_dir.parent)))
+            cnmf_hdf5_path = str(
+                PurePosixPath(output_path.relative_to(output_dir.parent))
+            )
+            cnmf_memmap_path = str(
+                PurePosixPath(df.paths.split(cnmf_memmap_path)[1])
+            )  # still work if outside output dir
+            corr_img_path = str(
+                PurePosixPath(corr_img_path.relative_to(output_dir.parent))
+            )
             for proj_type in proj_paths.keys():
-                d[f"{proj_type}-projection-path"] = str(PurePosixPath(proj_paths[proj_type].relative_to(
-                    output_dir.parent
-                )))
+                d[f"{proj_type}-projection-path"] = str(
+                    PurePosixPath(proj_paths[proj_type].relative_to(output_dir.parent))
+                )
 
             d.update(
                 {
@@ -152,6 +171,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
 
     runtime = round(time.time() - algo_start, 2)
     df.caiman.update_item_with_results(uuid, d, runtime)
+
 
 @click.command()
 @click.option("--batch-path", type=str)

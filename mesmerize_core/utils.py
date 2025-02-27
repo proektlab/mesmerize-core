@@ -4,7 +4,6 @@ Useful functions adapted from old mesmerize
 GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 """
 
-
 import numpy as np
 from functools import wraps
 import os
@@ -36,6 +35,7 @@ def warning_experimental(more_info: str = ""):
     """
     decorator to warn the user that the function is experimental
     """
+
     def catcher(func):
         @wraps(func)
         def fn(self, *args, **kwargs):
@@ -45,10 +45,12 @@ def warning_experimental(more_info: str = ""):
                 f"{func.__qualname__}\n"
                 f"{more_info}\n",
                 FutureWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             return func(self, *args, **kwargs)
+
         return fn
+
     return catcher
 
 
@@ -131,15 +133,14 @@ def make_runfile(
                     f'export MESMERIZE_N_PROCESSES={os.environ["MESMERIZE_N_PROCESSES"]}\n'
                 )
 
-            f.write(
-                f"export OPENBLAS_NUM_THREADS=1\n"
-                f"export MKL_NUM_THREADS=1\n"
-            )
+            f.write(f"export OPENBLAS_NUM_THREADS=1\n" f"export MKL_NUM_THREADS=1\n")
 
             if "CONDA_PREFIX" in os.environ.keys():
                 # add command to run the python script in the conda environment
                 # that was active at the time that this shell script was generated
-                f.write(f'{os.environ["CONDA_EXE"]} run -p {os.environ["CONDA_PREFIX"]} python {module_path} {args_str}')
+                f.write(
+                    f'{os.environ["CONDA_EXE"]} run -p {os.environ["CONDA_PREFIX"]} python {module_path} {args_str}'
+                )
             else:
                 f.write(f"python {module_path} {args_str}")  # call the script to run
 
@@ -156,7 +157,9 @@ def make_runfile(
                         os.unlink(tmp.name)
                     except:
                         continue
-                f.write(f'$env:{k}="{v}";\n')  # write only env vars that powershell likes
+                f.write(
+                    f'$env:{k}="{v}";\n'
+                )  # write only env vars that powershell likes
             f.write(f"{sys.executable} {module_path} {args_str}")
 
     st = os.stat(sh_file)
@@ -204,7 +207,7 @@ def flatten_params(params_dict: dict) -> dict:
         else:
             params[key1] = val1
     return params
-        
+
 
 def get_params_diffs(params: Sequence[dict]) -> list[dict]:
     """Compute differences between params used for mesmerize"""
@@ -212,8 +215,12 @@ def get_params_diffs(params: Sequence[dict]) -> list[dict]:
     params_flat = list(map(flatten_params, params))
 
     # build list of params that differ between different parameter sets
-    common_params = deepcopy(params_flat[0])  # holds the common value for parameters found in all sets (so far)
-    varying_params = set()  # set of parameter keys that appear in not all sets or with varying values
+    common_params = deepcopy(
+        params_flat[0]
+    )  # holds the common value for parameters found in all sets (so far)
+    varying_params = (
+        set()
+    )  # set of parameter keys that appear in not all sets or with varying values
 
     for this_params in params_flat[1:]:
         # first, anything that's not in both this dict and the common set is considered varying
@@ -225,10 +232,19 @@ def get_params_diffs(params: Sequence[dict]) -> list[dict]:
                 common_paramset.remove(not_common_key)
 
         # second, look at params in the common set and remove any that differ for this set
-        for key in common_paramset:  # iterate over this set rather than dict itself to avoid issues when deleting entries
-            if not np.array_equal(common_params[key], this_params[key]):  # (should also work for scalars/arbitrary objects)
+        for (
+            key
+        ) in (
+            common_paramset
+        ):  # iterate over this set rather than dict itself to avoid issues when deleting entries
+            if not np.array_equal(
+                common_params[key], this_params[key]
+            ):  # (should also work for scalars/arbitrary objects)
                 varying_params.add(key)
                 del common_params[key]
 
     # gives a list where each item is a dict that has the unique params that correspond to a row
-    return [{key: p[key] if key in p else "<default>" for key in varying_params} for p in params_flat]
+    return [
+        {key: p[key] if key in p else "<default>" for key in varying_params}
+        for p in params_flat
+    ]
