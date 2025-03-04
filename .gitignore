@@ -131,10 +131,11 @@ dmypy.json
 # pycharm
 .idea/
 
-# test files
-tests/tmp
-tests/videos
-tests/ground_truths*
+# vscode
+.vscode/
 
-# VS code
-.vscode
+# test files
+tests/test data
+
+# VSCode
+.vscode/
