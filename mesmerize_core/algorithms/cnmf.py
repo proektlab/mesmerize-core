@@ -4,7 +4,6 @@ import click
 import caiman as cm
 from caiman.source_extraction.cnmf import cnmf as cnmf
 from caiman.source_extraction.cnmf.params import CNMFParams
-from caiman.summary_images import local_correlations_movie_offline
 from caiman.paths import decode_mmap_filename_dict
 import numpy as np
 import traceback
@@ -19,12 +18,13 @@ if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     from mesmerize_core.algorithms._utils import (
         ensure_server,
         save_projections_parallel,
+        save_correlation_parallel,
         setup_logging,
     )
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
     from ..utils import IS_WINDOWS
-    from ._utils import ensure_server, save_projections_parallel, setup_logging
+    from ._utils import ensure_server, save_projections_parallel, save_correlation_parallel, setup_logging
 
 
 def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None):
@@ -86,19 +86,14 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             )
 
             print("computing correlation image")
-            Cns = local_correlations_movie_offline(
-                str(cnmf_memmap_path),
-                remove_baseline=True,
-                window=1000,
-                stride=1000,
-                winSize_baseline=100,
-                quantil_min_baseline=10,
+            corr_img_path = save_correlation_parallel(
+                uuid=uuid,
+                movie_path=cnmf_memmap_path,
+                output_dir=output_dir,
+                dims=dims,
                 dview=dview,
+                max_window=1000
             )
-            Cn = Cns.max(axis=0)
-            Cn[np.isnan(Cn)] = 0
-            corr_img_path = output_dir.joinpath(f"{uuid}_cn.npy")
-            np.save(str(corr_img_path), Cn, allow_pickle=False)
 
             # # in fname new load in memmap order C
             # cm.stop_server(dview=dview)
