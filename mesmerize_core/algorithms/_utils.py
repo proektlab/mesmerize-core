@@ -19,6 +19,7 @@ from typing import (
 import caiman as cm
 from caiman.cluster import setup_cluster
 from caiman.summary_images import local_correlations
+from ipyparallel import DirectView
 from multiprocessing.pool import Pool
 import numpy as np
 import scipy.stats
@@ -53,7 +54,7 @@ class CustomCluster(Protocol):
         ...
 
 
-Cluster = Union[Pool, CustomCluster]
+Cluster = Union[Pool,  CustomCluster, DirectView]
 
 
 def get_n_processes(dview: Optional[Cluster]) -> int:
@@ -195,8 +196,8 @@ def save_projections_parallel(
 ChunkDims = tuple[slice, slice]
 ChunkSpec = tuple[ChunkDims, ChunkDims, ChunkDims]  # input, output, patch subinds
 
-def save_correlation_parallel(uuid, movie_path: Union[str, Path], output_dir: Path, dview: Optional[Cluster]) -> Path:
-    """Compute and save local correlations in chunks that are small enough to fit in memory"""
+def make_correlation_parallel(movie_path: Union[str, Path], dview: Optional[Cluster]) -> np.ndarray:
+    """Compute local correlations in chunks that are small enough to fit in memory"""
     Yr, dims, T = cm.load_memmap(str(movie_path))
 
     # use n_pixels_per_process from CNMF to avoid running out of memory
@@ -217,9 +218,14 @@ def save_correlation_parallel(uuid, movie_path: Union[str, Path], output_dir: Pa
     for (_, output_coords, subinds), patch_corr in zip(patches, patch_corrs):
         output_img[output_coords] = patch_corr[subinds]
     
-    # save to file and return path
+    return output_img
+
+
+def save_correlation_parallel(uuid, movie_path: Union[str, Path], output_dir: Path, dview: Optional[Cluster]) -> Path:
+    """Compute and save local correlations in chunks that are small enough to fit in memory"""
+    corr_img = make_correlation_parallel(movie_path, dview)
     corr_img_path = output_dir.joinpath(f"{uuid}_cn.npy")
-    np.save(str(corr_img_path), output_img, allow_pickle=False)
+    np.save(str(corr_img_path), corr_img, allow_pickle=False)
     return corr_img_path
 
 
