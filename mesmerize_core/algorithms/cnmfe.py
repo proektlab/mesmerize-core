@@ -14,12 +14,13 @@ if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     from mesmerize_core.algorithms._utils import (
         ensure_server,
         save_projections_parallel,
+        save_c_order_mmap_parallel,
         setup_logging,
     )
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
     from ..utils import IS_WINDOWS
-    from ._utils import ensure_server, save_projections_parallel, setup_logging
+    from ._utils import ensure_server, save_projections_parallel, save_c_order_mmap_parallel, setup_logging
 
 
 def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None):
@@ -56,10 +57,9 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
 
             cnmfe_params_dict = CNMFParams(params_dict=params_dict)
 
-            fname_new = cm.save_memmap(
-                [input_movie_path],
+            fname_new = save_c_order_mmap_parallel(
+                input_movie_path,
                 base_name=f"{uuid}_cnmf-memmap_",
-                order="C",
                 dview=dview,
                 var_name_hdf5=cnmfe_params_dict.data['var_name_hdf5']
             )
