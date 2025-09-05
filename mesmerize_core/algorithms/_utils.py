@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import logging
 import os
 from pathlib import Path
 import psutil
@@ -9,6 +10,16 @@ from caiman.cluster import setup_cluster
 from ipyparallel import DirectView
 from multiprocessing.pool import Pool
 import numpy as np
+
+
+def setup_logging(log_level: Union[int, str] = logging.INFO):
+    if isinstance(log_level, str):
+        log_level = getattr(logging, log_level)
+    logging.basicConfig(
+        format="{asctime} - {levelname} - [{filename} {funcName}() {lineno}] - pid {process} - {message}",
+        filename=None, force=True,
+        level=log_level, style="{") # logging level can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+
 
 Cluster = Union[Pool, DirectView]
 
