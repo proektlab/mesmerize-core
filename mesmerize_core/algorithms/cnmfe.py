@@ -114,7 +114,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                 n_processes=n_processes, dview=dview, params=cnmfe_params_dict, Ain=Ain
             )
             print("Performing CNMFE")
-            cnm = cnm.fit(images)
+            cnm.fit(images)
             print("evaluating components")
             cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
 

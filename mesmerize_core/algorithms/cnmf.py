@@ -121,7 +121,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             cnm = cnmf.CNMF(n_processes, params=cnmf_params, dview=dview, Ain=Ain)
 
             print("fitting images")
-            cnm = cnm.fit(images)
+            cnm.fit(images)
             #
             if "refit" in params.keys():
                 if params["refit"] is True:
