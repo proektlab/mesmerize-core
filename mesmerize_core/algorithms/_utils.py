@@ -19,6 +19,7 @@ from typing import (
 import caiman as cm
 from caiman.cluster import setup_cluster
 from caiman.summary_images import local_correlations
+from ipyparallel import DirectView
 from multiprocessing.pool import Pool
 import numpy as np
 import scipy.stats
@@ -53,7 +54,7 @@ class CustomCluster(Protocol):
         ...
 
 
-Cluster = Union[Pool, CustomCluster]
+Cluster = Union[Pool,  CustomCluster, DirectView]
 
 
 def get_n_processes(dview: Optional[Cluster]) -> int:
