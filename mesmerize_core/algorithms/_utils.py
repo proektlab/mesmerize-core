@@ -19,7 +19,6 @@ from typing import (
 import caiman as cm
 from caiman.cluster import setup_cluster
 from caiman.summary_images import local_correlations_movie_offline
-from ipyparallel import DirectView
 from multiprocessing.pool import Pool
 import numpy as np
 import scipy.stats
@@ -37,11 +36,13 @@ def setup_logging(log_level: Union[int, str] = logging.INFO):
     )  # logging level can be DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
+RetVal = TypeVar("RetVal")
 @runtime_checkable
 class CustomCluster(Protocol):
-    """Protocol for a cluster that is not a multiprocessing pool"""
-
-    RetVal = TypeVar("RetVal")
+    """
+    Protocol for a cluster that is not a multiprocessing pool
+    (including ipyparallel.DirectView)
+    """
 
     def map_sync(
         self, fn: Callable[..., RetVal], args: Iterable
@@ -52,14 +53,15 @@ class CustomCluster(Protocol):
         ...
 
 
-Cluster = Union[Pool, DirectView, CustomCluster]
+Cluster = Union[Pool, CustomCluster]
 
 
 def get_n_processes(dview: Optional[Cluster]) -> int:
     """Infer number of processes in a multiprocessing or ipyparallel cluster"""
-    if isinstance(dview, Pool) and hasattr(dview, "_processes"):
+    if isinstance(dview, Pool):
+        assert hasattr(dview, '_processes'), "Pool not keeping track of # of processes?"
         return dview._processes  # type: ignore
-    elif isinstance(dview, CustomCluster):
+    elif dview is not None:
         return len(dview)
     else:
         return 1
