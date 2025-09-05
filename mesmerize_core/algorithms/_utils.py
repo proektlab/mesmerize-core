@@ -5,6 +5,7 @@ import psutil
 from typing import Optional, Union, Generator
 
 import caiman as cm
+from caiman.cluster import setup_cluster
 from ipyparallel import DirectView
 from multiprocessing.pool import Pool
 import numpy as np
@@ -14,7 +15,7 @@ Cluster = Union[Pool, DirectView]
 def get_n_processes(dview: Optional[Cluster]) -> int:
     """Infer number of processes in a multiprocessing or ipyparallel cluster"""
     if isinstance(dview, Pool) and hasattr(dview, '_processes'):
-        return dview._processes
+        return dview._processes  # type: ignore
     elif isinstance(dview, DirectView):
         return len(dview)
     else:
@@ -42,9 +43,10 @@ def ensure_server(dview: Optional[Cluster]) -> Generator[tuple[Cluster, int], No
             n_processes = psutil.cpu_count() - 1
 
         # Start cluster for parallel processing
-        _, dview, n_processes = cm.cluster.setup_cluster(
+        _, dview, n_processes = setup_cluster(
             backend="multiprocessing", n_processes=n_processes, single_thread=False
         )
+        assert isinstance(dview, Pool) and isinstance(n_processes, int), 'setup_cluster with multiprocessing did not return a Pool'
         try:
             yield dview, n_processes
         finally:
