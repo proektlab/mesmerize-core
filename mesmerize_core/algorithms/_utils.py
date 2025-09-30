@@ -21,7 +21,7 @@ from typing import (
 import caiman as cm
 from caiman.base.movies import get_file_size
 from caiman.cluster import setup_cluster
-from caiman.paths import memmap_frames_filename, fn_relocated
+from caiman.paths import generate_fname_tot, fn_relocated
 from caiman.summary_images import local_correlations
 from ipyparallel import DirectView
 from multiprocessing.pool import Pool
@@ -236,7 +236,9 @@ def save_c_order_mmap_parallel(movie_path: str, base_name: str, dview: Optional[
     dims, tot_frames = get_file_size(movie_path, var_name_hdf5=var_name_hdf5)
     assert isinstance(tot_frames, int)  # non-type-stable interface...
 
-    mmap_fname = memmap_frames_filename(base_name, dims, tot_frames, order='C')
+    # use generate_fname_tot to emulate behavior of save_memmap
+    mmap_fname_start = generate_fname_tot(base_name, list(dims), order='C')
+    mmap_fname = f'{mmap_fname_start}_frames_{tot_frames}.mmap'
     mmap_fname = os.path.join(os.path.split(movie_path)[0], mmap_fname)
     mmap_fname = fn_relocated(mmap_fname)
     logging.info(f'Creating mmap file: {mmap_fname}')
