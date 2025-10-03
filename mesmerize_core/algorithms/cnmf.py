@@ -74,7 +74,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                     input_movie_path,
                     base_name=f"{uuid}_cnmf-memmap_",
                     dview=dview,
-                    var_name_hdf5=cnmf_params.data['var_name_hdf5']
+                    var_name_hdf5=cnmf_params.data["var_name_hdf5"],
                 )
                 cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
                 move_file(fname_new, cnmf_memmap_path)

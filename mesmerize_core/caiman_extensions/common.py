@@ -722,14 +722,13 @@ class CaimanSeriesExtensions:
             reader = default_reader
 
         # add hdf5 variable name if provided
-        main_params = self._series.params['main']
-        if 'var_name_hdf5' in main_params:
-            kwargs['var_name_hdf5'] = main_params['var_name_hdf5']
-        elif 'data' in main_params and 'var_name_hdf5' in main_params['data']:
-            kwargs['var_name_hdf5'] = main_params['data']['var_name_hdf5']
+        main_params = self._series.params["main"]
+        if "var_name_hdf5" in main_params:
+            kwargs["var_name_hdf5"] = main_params["var_name_hdf5"]
+        elif "data" in main_params and "var_name_hdf5" in main_params["data"]:
+            kwargs["var_name_hdf5"] = main_params["data"]["var_name_hdf5"]
 
         return reader(path_str, **kwargs)
-
 
     @validate()
     def get_corr_image(self) -> np.ndarray:
