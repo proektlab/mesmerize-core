@@ -20,7 +20,12 @@ if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     )
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
-    from ._utils import ensure_server, save_projections_parallel, save_correlation_parallel, setup_logging
+    from ._utils import (
+        ensure_server,
+        save_projections_parallel,
+        save_correlation_parallel,
+        setup_logging,
+    )
 
 
 def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None):

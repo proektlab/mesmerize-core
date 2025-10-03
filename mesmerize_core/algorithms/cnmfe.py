@@ -21,7 +21,12 @@ if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
 else:  # when running with local backend
     from ..batch_utils import set_parent_raw_data_path, load_batch
     from ..utils import IS_WINDOWS
-    from ._utils import ensure_server, save_projections_parallel, save_c_order_mmap_parallel, setup_logging
+    from ._utils import (
+        ensure_server,
+        save_projections_parallel,
+        save_c_order_mmap_parallel,
+        setup_logging,
+    )
 
 
 def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None):
@@ -43,7 +48,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
     params = item["params"]
     print("cnmfe params:", params)
 
-    with ensure_server(dview) as (dview, n_processes):    
+    with ensure_server(dview) as (dview, n_processes):
         try:
             # force the CNMFE params
             cnmfe_params = {
@@ -70,7 +75,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                     input_movie_path,
                     base_name=f"{uuid}_cnmf-memmap_",
                     dview=dview,
-                    var_name_hdf5=cnmfe_params.data['var_name_hdf5']
+                    var_name_hdf5=cnmfe_params.data["var_name_hdf5"],
                 )
                 cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
                 move_file(fname_new, cnmf_memmap_path)
@@ -83,7 +88,10 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
             # TODO: if projections already exist from mcorr we don't
             #  need to waste compute time re-computing them here
             proj_paths = save_projections_parallel(
-                uuid=uuid, movie_path=cnmf_memmap_path, output_dir=output_dir, dview=dview
+                uuid=uuid,
+                movie_path=cnmf_memmap_path,
+                output_dir=output_dir,
+                dview=dview,
             )
 
             d = dict()  # for output
@@ -98,7 +106,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                     Ain = Ain.item()
 
                 # force params needed for seeded CNMFE
-                cnmfe_params.change_params({'patch': {'rf': None, 'only_init': False}})
+                cnmfe_params.change_params({"patch": {"rf": None, "only_init": False}})
             else:
                 Ain = None
 
@@ -125,9 +133,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                 Yr._mmap.close()  # accessing private attr but windows is annoying otherwise
 
             # save path as relative path strings with forward slashes
-            cnmfe_memmap_path = str(
-                PurePosixPath(df.paths.split(cnmf_memmap_path)[1])
-            )
+            cnmfe_memmap_path = str(PurePosixPath(df.paths.split(cnmf_memmap_path)[1]))
 
             d.update(
                 {
