@@ -130,6 +130,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                     "mcorr-output-path": mcorr_memmap_path,
                     "corr-img-path": cn_path,
                     "shifts": shift_path,
+                    "border_to_0": mc.border_to_0,
                     "success": True,
                     "traceback": None,
                 }

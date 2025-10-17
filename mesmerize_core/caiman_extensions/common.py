@@ -111,12 +111,20 @@ class CaimanDataFrameExtensions:
             )
 
         if isinstance(input_movie_path, pd.Series):
-            if not input_movie_path["algo"] == "mcorr":
+            input_series = input_movie_path
+            if not input_series["algo"] == "mcorr":
                 raise ValueError(
                     "`input_movie_path` argument must be an input movie path "
                     "as a `str` or `Path` object, or a mcorr batch item."
                 )
-            input_movie_path = input_movie_path.mcorr.get_output_path()
+            
+            input_movie_path = input_series.mcorr.get_output_path()
+
+            # set border_to_0 pixels automatically from mcorr result if set to None
+            if ("resave" in params and "border_to_0_pixels" in params["resave"] and
+                params["resave"]["border_to_0_pixels"] is None):
+                params["resave"]["border_to_0_pixels"] = input_series.mcorr.get_border_to_0()
+
 
         # make sure path is within batch dir or parent raw data path
         input_movie_path = self._df.paths.resolve(input_movie_path)

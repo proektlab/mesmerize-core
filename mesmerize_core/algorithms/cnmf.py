@@ -51,7 +51,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
     output_dir = Path(batch_path).parent.joinpath(str(uuid)).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    params = item["params"]
+    params: dict = item["params"]
     print(
         f"************************************************************************\n\n"
         f"Starting CNMF item:\n{item}\nWith params:{params}"
@@ -63,9 +63,11 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
         cnmf_params = CNMFParams(params_dict=params["main"])
         # Run CNMF, denote boolean 'success' if CNMF completes w/out error
         try:
-            # only re-save memmap if necessary
+            # only re-save memmap if necessary            
             save_new_mmap = True
-            if Path(input_movie_path).suffix == ".mmap":
+
+            # if resave parameters were passed, we force the re-save
+            if "resave" not in params and Path(input_movie_path).suffix == ".mmap":
                 mmap_info = decode_mmap_filename_dict(input_movie_path)
                 save_new_mmap = "order" not in mmap_info or mmap_info["order"] != "C"
 
@@ -76,6 +78,7 @@ def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None
                     base_name=f"{uuid}_cnmf-memmap_",
                     dview=dview,
                     var_name_hdf5=cnmf_params.data["var_name_hdf5"],
+                    **params.get("resave", {})
                 )
                 cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
                 move_file(fname_new, cnmf_memmap_path)
