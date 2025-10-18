@@ -305,14 +305,14 @@ def save_c_order_mmap_parallel(
     var_name_hdf5="mov",
     add_to_movie=0.0001,
     border_to_0_pixels=0,
-    highpass_cutoff: float = 0,
+    highpass_cutoff_nyq: float = 0,
     highpass_order=4
 ) -> str:
     """
     Alternative to cm.save_memmap that hopefully does better with memory
     add_to_movie=0.0001 emulates default behavior of save_memmap
     border_to_0: set this number of pixels along the border to 0 while transposing
-    highpass_cutoff: if nonzero, use a zero-phase Butterworth highpass filter
+    highpass_cutoff_nyq: if nonzero, use a zero-phase Butterworth highpass filter
         across time with this frequency cutoff (in fraction of Nyquist frequncy) while transposing
     highpass_order: order of the highpass filter, if using.
     """
@@ -339,9 +339,9 @@ def save_c_order_mmap_parallel(
     valid_mask = valid_mask_2d.ravel(order="F")
 
     # make filter, if needed
-    if highpass_cutoff > 0:
-        filter_sos = scipy.signal.butter(highpass_order, highpass_cutoff, btype="highpass", output="sos")
-    elif highpass_cutoff == 0:
+    if highpass_cutoff_nyq > 0:
+        filter_sos = scipy.signal.butter(highpass_order, highpass_cutoff_nyq, btype="highpass", output="sos")
+    elif highpass_cutoff_nyq == 0:
         filter_sos = None
     else:
         raise ValueError("Negative or invalid value for highpass_cutoff is not allowed")

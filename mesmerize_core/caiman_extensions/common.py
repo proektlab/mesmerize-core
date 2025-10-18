@@ -121,9 +121,10 @@ class CaimanDataFrameExtensions:
             input_movie_path = input_series.mcorr.get_output_path()
 
             # set border_to_0 pixels automatically from mcorr result if set to None
-            if ("resave" in params and "border_to_0_pixels" in params["resave"] and
-                params["resave"]["border_to_0_pixels"] is None):
-                params["resave"]["border_to_0_pixels"] = input_series.mcorr.get_border_to_0()
+            if ("preprocessing" in params and
+                "border_to_0_pixels" in params["preprocessing"] and
+                params["preprocessing"]["border_to_0_pixels"] is None):
+                params["preprocessing"]["border_to_0_pixels"] = input_series.mcorr.get_border_to_0()
 
 
         # make sure path is within batch dir or parent raw data path

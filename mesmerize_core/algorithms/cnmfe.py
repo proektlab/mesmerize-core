@@ -67,11 +67,16 @@ def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_
 
             cnmfe_params = CNMFParams(params_dict=params_dict)
 
-            # only re-save memmap if necessary
-            save_new_mmap = True
+            preprocessing_params = params.get("preprocessing", {})
+            if (cutoff_hz := preprocessing_params.pop("highpass_cutoff_hz", None)):
+                # convert to fraction of Nyquist frequency
+                nyq = cnmfe_params.data['fr'] / 2
+                preprocessing_params["highpass_cutoff_nyq"] = cutoff_hz / nyq
 
-            # if resave parameters were passed, we force the re-save
-            if "resave" not in params and Path(input_movie_path).suffix == ".mmap":
+            # only re-save memmap if the input file is not a C-order mmap 
+            # or preprocessing parameters were passed
+            save_new_mmap = True
+            if not preprocessing_params and Path(input_movie_path).suffix == ".mmap":
                 mmap_info = decode_mmap_filename_dict(input_movie_path)
                 save_new_mmap = "order" not in mmap_info or mmap_info["order"] != "C"
 
@@ -82,7 +87,7 @@ def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_
                     base_name=f"{uuid}_cnmf-memmap_",
                     dview=dview,
                     var_name_hdf5=cnmfe_params.data["var_name_hdf5"],
-                    **params.get("resave", {})
+                    **preprocessing_params
                 )
                 cnmf_memmap_path = output_dir.joinpath(Path(fname_new).name)
                 move_file(fname_new, cnmf_memmap_path)
