@@ -4,10 +4,11 @@ import caiman as cm
 from caiman.source_extraction.cnmf import cnmf as cnmf
 from caiman.source_extraction.cnmf.params import CNMFParams
 from caiman.paths import decode_mmap_filename_dict
-import traceback
 from pathlib import Path, PurePosixPath
 from shutil import move as move_file
 import time
+import traceback
+from typing import Optional
 
 if __name__ in ["__main__", "__mp_main__"]:  # when running in subprocess
     from mesmerize_core import set_parent_raw_data_path, load_batch
@@ -29,11 +30,14 @@ else:  # when running with local backend
     )
 
 
-def run_algo(batch_path, uuid, data_path: str = None, dview=None, log_level=None):
+def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_level=None):
+    algo_start = time.time()
+
     if log_level is not None:
         setup_logging(log_level)
-    algo_start = time.time()
-    set_parent_raw_data_path(data_path)
+
+    if data_path is not None:
+        set_parent_raw_data_path(data_path)
 
     df = load_batch(batch_path)
     item = df.caiman.uloc(uuid)
