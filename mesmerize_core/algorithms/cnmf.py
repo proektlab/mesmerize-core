@@ -68,8 +68,9 @@ def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_
         # Run CNMF, denote boolean 'success' if CNMF completes w/out error
         try:
             preprocessing_params = params.get("preprocessing", {})
-            if (cutoff_hz := preprocessing_params.pop("highpass_cutoff_hz", None)):
+            if "highpass_cutoff_hz" in preprocessing_params:
                 # convert to fraction of Nyquist frequency
+                cutoff_hz = preprocessing_params.pop("highpass_cutoff_hz")
                 nyq = cnmf_params.data['fr'] / 2
                 preprocessing_params["highpass_cutoff_nyq"] = cutoff_hz / nyq
 
