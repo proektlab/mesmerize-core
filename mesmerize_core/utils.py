@@ -193,22 +193,24 @@ def _organize_coordinates(contour: dict):
     return coors
 
 
-def flatten_params(params_dict: dict) -> dict:
+def flatten_params(params_dict: dict, skip_keys: Iterable[str] = ("main",), prefix="") -> dict:
     """
     Produce a flat dict with one entry for each parameter in the passed dict.
     If params_dict['main'] is nested one level (e.g., {'init': {'K': 5}, 'merging': {'merge_thr': 0.85}}...),
     each key in the output is <outerKey>.<innerKey>, e.g., [(init.K, 5), (merging.merge_thr, 0.85)]
+
+    More general & recursive operation:
+        - values in skip_keys will not be included in the parameter name (on this level).
+        - the prefix string will be prepended to the name of the parameter (starting on this level).
     """
     params = {}
-    for key1, val1 in params_dict.items():
-        if key1 == "main":
-            # recursively step into "main" params
-            params.update(flatten_params(val1))
-        elif isinstance(val1, dict):  # nested
-            for key2, val2 in val1.items():
-                params[f"{key1}.{key2}"] = val2
+    for key, val in params_dict.items():
+        if isinstance(val, dict):
+            # recurse into dict, updating prefix unless we are skipping this key
+            new_prefix = prefix if key in skip_keys else prefix + key + "."
+            params.update(flatten_params(val, skip_keys=(), prefix=new_prefix))
         else:
-            params[key1] = val1
+            params[prefix + key] = val
     return params
 
 
