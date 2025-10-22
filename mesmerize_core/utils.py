@@ -253,3 +253,19 @@ def get_params_diffs(params: Sequence[dict]) -> list[dict]:
         {key: p[key] if key in p else "<default>" for key in varying_params}
         for p in params_flat
     ]
+
+
+# Specification for motion correction border
+class Border2D(TypedDict):
+    left: int
+    right: int
+    top: int
+    bottom: int
+
+class Border(Border2D, total=False):
+    """
+    Dictionary containing size of border (potentially non-symmetric)
+    3D fields are optional.
+    """
+    z_top: int
+    z_bottom: int

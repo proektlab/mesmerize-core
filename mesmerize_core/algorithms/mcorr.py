@@ -81,8 +81,6 @@ def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_
             print("mc finished successfully!")
 
             print("computing projections")
-            Yr, dims, T = cm.load_memmap(str(mcorr_memmap_path))
-            images = np.reshape(Yr.T, [T] + list(dims), order="F")
 
             proj_paths = save_projections_parallel(
                 uuid=uuid,
@@ -134,7 +132,7 @@ def run_algo(batch_path, uuid, data_path: Optional[str] = None, dview=None, log_
                     "mcorr-output-path": mcorr_memmap_path,
                     "corr-img-path": cn_path,
                     "shifts": shift_path,
-                    "border_to_0": mc.border_to_0,
+                    "border": mc.border_to_0,
                     "success": True,
                     "traceback": None,
                 }
