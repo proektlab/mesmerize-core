@@ -256,7 +256,8 @@ class ColumnMappingFunction(Generic[R]):
 
 def _save_c_order_mmap_in_chunks_kernel(
     Yr_chunk: np.ndarray, pixel_slice: slice, mmap_fname: str, byte_offset: int,
-    valid_pixel_mask: np.ndarray, add_to_movie: Union[float, np.ndarray], filter_sos: Optional[np.ndarray] = None
+    valid_pixel_mask: np.ndarray, add_to_movie: Union[float, np.ndarray], add_to_movie_temporal: Optional[np.ndarray],
+    filter_sos: Optional[np.ndarray] = None
 ):
     """
     Alternative to cm.save_memmap that can load from non-mmap files and uses chunks
@@ -269,6 +270,7 @@ def _save_c_order_mmap_in_chunks_kernel(
         - valid_pixel_mask: Boolean vector of which pixels in the whole movie should be nonzero
             (index using pixel_slice to get mask for this block)
         - add_to_movie: Constant to add to all valid pixels (either scalar or # pixels-length vector)
+        - add_to_movie_temporal: If given, vector in time to multiply add_to_movie by
         - filter_sos: If non-None, use this filter in second-order-sections format to filter
             across time (typically for high-pass filtering). Adds mean back in after filtering.
     """
@@ -281,6 +283,10 @@ def _save_c_order_mmap_in_chunks_kernel(
         add_pixels = add_pixels[valid_pixels, np.newaxis].astype(np.float32)
     else:
         add_pixels = np.float32(add_to_movie)
+
+    if add_to_movie_temporal is not None:
+        # multiply out to get either time-length vector or pixels x time matrix
+        add_pixels *= add_to_movie_temporal
 
     # do the transpose by assigning from F-order to C-order
     c_order_chunk[valid_pixels] = Yr_chunk[valid_pixels] + add_pixels
@@ -326,6 +332,7 @@ def save_c_order_mmap_parallel(
     fr: float,
     var_name_hdf5="mov",
     add_to_movie: Union[float, np.ndarray] = 0.0001,
+    add_to_movie_temporal: Optional[np.ndarray] = None,
     border_pixels: Union[int, Border, np.ndarray] = 0,
     highpass_cutoff: float = 0, # in Hz
     highpass_order=4,
@@ -337,6 +344,7 @@ def save_c_order_mmap_parallel(
     add_to_movie: constant to add to each frame - either scalar or array with size matching # of pixels,
         either for whole movie or in the center.
         (default value of 0.0001 emulates default behavior of save_memmap)
+    add_to_movie_temporal: frames-length vector to multiply add_to_movie by
     border_pixels: specifies which pixels should be used vs. set to 0. One of the following types:
         - if an int, exclude this many pixels on the border in each dimension
         - if a mapping conforming to "Border" (with at least "left", "right", "top", "bottom" keys),
@@ -429,7 +437,7 @@ def save_c_order_mmap_parallel(
     # parallel load/save call
     save_c_order_mmap_in_chunks(
         movie_path, dview, var_name_hdf5,
-        output_path, byte_offset, valid_mask, add_to_movie, filter_sos
+        output_path, byte_offset, valid_mask, add_to_movie, add_to_movie_temporal, filter_sos
     )
 
     # clean up
