@@ -286,7 +286,7 @@ def _save_c_order_mmap_in_chunks_kernel(
 
     if add_to_movie_temporal is not None:
         # multiply out to get either time-length vector or pixels x time matrix
-        add_pixels *= add_to_movie_temporal
+        add_pixels = add_pixels * add_to_movie_temporal
 
     # do the transpose by assigning from F-order to C-order
     c_order_chunk[valid_pixels] = Yr_chunk[valid_pixels] + add_pixels
