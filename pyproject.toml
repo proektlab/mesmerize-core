@@ -45,8 +45,8 @@ dependencies = [
 ]
 
 
-[tool.setuptools]
-packages = ["mesmerize_core"]
+[tool.setuptools.packages.find]
+exclude = ["notebooks*", "tests*", "docs*"]
 
 [tool.setuptools.dynamic]
 version = { file = "mesmerize_core/VERSION" }
