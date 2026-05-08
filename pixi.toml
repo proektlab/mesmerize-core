@@ -1,0 +1,40 @@
+# Info for pixi-build, to build as an editable package for including in other environments
+[package]
+version = "0.6.0"  # see: https://github.com/prefix-dev/pixi/issues/2946
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.4.*"
+
+[package.build.config]
+ignore-pypi-mapping = false
+
+[package.host-dependencies]
+uv = "*"  # added for faster installation
+
+# Environment specification for using just mesmerize_core
+[workspace]
+preview = ["pixi-build"]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-arm64", "osx-64"]
+
+[feature.mescore.dependencies]
+mesmerize-core = { path = "." }
+
+# this is required to satisfy dependency of cuda builds on __cuda virtual package
+[feature.cuda.system-requirements]
+cuda = "12"
+
+[feature.cuda.dependencies]
+pytorch = { version = "*", build = "cuda*" }
+
+# cuda pytorch doesn't exist for osx, so don't require it for default environment
+[feature.cuda.target.osx-64.dependencies]
+pytorch = { version = "*" }
+
+[feature.cuda.target.osx-arm64.dependencies]
+pytorch = { version = "*" }
+
+[environments]
+default = { features = ["mescore", "cuda"] }
+cpu = { features = ["mescore"] }
