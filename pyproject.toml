@@ -13,13 +13,13 @@ authors = [
 description = "High level pandas-based API for batch analysis of Calcium Imaging data using CaImAn"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.9"
-license = "Apache-Software-License"
+license = "LicenseRef-BSD-3-Clause-Noncommercial"
+license-files = ["LICENSE"]
 urls = { Repository = "https://github.com/nel-lab/mesmerize-core" }
 dynamic = ["version"]
 
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows :: Windows 10",
