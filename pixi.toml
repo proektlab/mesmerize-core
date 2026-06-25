@@ -4,10 +4,11 @@ version = "0.6.0"  # see: https://github.com/prefix-dev/pixi/issues/2946
 
 [package.build.backend]
 name = "pixi-build-python"
-version = "0.4.*"
+version = "0.*"
 
 [package.build.config]
 ignore-pypi-mapping = false
+extra-args = ["-Ceditable_mode=compat"]
 
 [package.host-dependencies]
 uv = "*"  # added for faster installation
