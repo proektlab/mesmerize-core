@@ -15,6 +15,7 @@ from typing import (
     Sequence,
     Iterable,
     Mapping,
+    Literal,
     runtime_checkable,
 )
 
@@ -257,7 +258,8 @@ class ColumnMappingFunction(Generic[R]):
 def _save_c_order_mmap_in_chunks_kernel(
     Yr_chunk: np.ndarray, pixel_slice: slice, mmap_fname: str, byte_offset: int,
     valid_pixel_mask: np.ndarray, add_to_movie: Union[float, np.ndarray], add_to_movie_temporal: Optional[np.ndarray],
-    filter_sos: Optional[np.ndarray] = None
+    filter_sos: Optional[np.ndarray] = None, filter_padtype: Optional[Literal['odd', 'even', 'constant']] = 'odd',
+    filter_padlen: Optional[int] = None
 ):
     """
     Alternative to cm.save_memmap that can load from non-mmap files and uses chunks
@@ -273,6 +275,7 @@ def _save_c_order_mmap_in_chunks_kernel(
         - add_to_movie_temporal: If given, vector in time to multiply add_to_movie by
         - filter_sos: If non-None, use this filter in second-order-sections format to filter
             across time (typically for high-pass filtering). Adds mean back in after filtering.
+        - filter_padtype, filter_padlen: Additional options for sosfiltfilt, used if filter_sos is non-None
     """
     valid_pixels = valid_pixel_mask[pixel_slice]
     c_order_chunk = np.zeros_like(Yr_chunk, dtype=np.float32, order="C")  # pixels x time
@@ -297,7 +300,8 @@ def _save_c_order_mmap_in_chunks_kernel(
         chunk_mean = np.mean(Yr_chunk[valid_pixels], axis=1, keepdims=True)
 
         c_order_chunk[valid_pixels] = chunk_mean + scipy.signal.sosfiltfilt(
-            filter_sos, c_order_chunk[valid_pixels], axis=1).astype(np.float32)
+            filter_sos, c_order_chunk[valid_pixels], axis=1,
+            padtype=filter_padtype, padlen=filter_padlen).astype(np.float32)
     
     tot_frames = c_order_chunk.shape[1]
 
@@ -336,6 +340,8 @@ def save_c_order_mmap_parallel(
     border_pixels: Union[int, Border, np.ndarray] = 0,
     highpass_cutoff: float = 0, # in Hz
     highpass_order=4,
+    highpass_padtype: Optional[Literal['odd', 'even', 'constant']] = 'odd',
+    highpass_padlen: Optional[int] = None,
     existing_output_path: Optional[str] = None,
     existing_output_offset=0
 ) -> str:
@@ -437,7 +443,8 @@ def save_c_order_mmap_parallel(
     # parallel load/save call
     save_c_order_mmap_in_chunks(
         movie_path, dview, var_name_hdf5,
-        output_path, byte_offset, valid_mask, add_to_movie, add_to_movie_temporal, filter_sos
+        output_path, byte_offset, valid_mask, add_to_movie, add_to_movie_temporal,
+        filter_sos, highpass_padtype, highpass_padlen
     )
 
     # clean up
