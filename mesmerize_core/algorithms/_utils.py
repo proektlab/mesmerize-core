@@ -277,6 +277,7 @@ def _save_c_order_mmap_in_chunks_kernel(
     """
     valid_pixels = valid_pixel_mask[pixel_slice]
     c_order_chunk = np.zeros_like(Yr_chunk, dtype=np.float32, order="C")  # pixels x time
+    tot_frames = c_order_chunk.shape[1]
     
     # get part of add_to_movie to use
     if isinstance(add_to_movie, np.ndarray):
@@ -293,11 +294,14 @@ def _save_c_order_mmap_in_chunks_kernel(
         # take mean to add back in after filtering
         chunk_mean = np.mean(Yr_chunk[valid_pixels], axis=1, keepdims=True)
 
+        if filter_padlen is not None:
+            # make sure the padding length isn't too long
+            filter_padlen = min(filter_padlen, tot_frames-1)
+
         c_order_chunk[valid_pixels] = chunk_mean + scipy.signal.sosfiltfilt(
             filter_sos, c_order_chunk[valid_pixels], axis=1,
             padtype=filter_padtype, padlen=filter_padlen).astype(np.float32)
     
-    tot_frames = c_order_chunk.shape[1]
 
     with open(mmap_fname, "r+b") as f:
         # seek to the start of the chunk
